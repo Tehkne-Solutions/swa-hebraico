@@ -1,0 +1,22 @@
+name: ALEPH 119 Card Assets v0.5 Gate
+
+on:
+  pull_request:
+    paths:
+      - 'data/cards.json'
+      - 'tools/card-assets-v05.mjs'
+      - '.github/workflows/card-assets-v05.yml'
+      - 'assets/**'
+  push:
+    branches: [main]
+
+jobs:
+  validate-card-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check tools/card-assets-v05.mjs
+      - run: node tools/card-assets-v05.mjs
