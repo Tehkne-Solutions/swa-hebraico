@@ -1,0 +1,39 @@
+{
+  "version": "0.6.0",
+  "signature": "Tehkné Solutions",
+  "expected": {
+    "masterLetters": 22,
+    "verseCards": 176,
+    "cardBack": 1,
+    "totalAssets": 199,
+    "totalBytes": 83588539
+  },
+  "groups": {
+    "masterLetters": {
+      "path": "assets/master_letters",
+      "count": 22,
+      "bytes": 25598201,
+      "aggregateSha256": "1445d8c2291eee6194a6b436229f7451fd25a2969deddfc5e3bbd37634248655"
+    },
+    "verseCards": {
+      "path": "assets/verse_cards",
+      "count": 176,
+      "bytes": 57918182,
+      "aggregateSha256": "698f1209a5ab48f63afcd8e6107b2965cfec5d3c6278d44a09bbdeca13bf1ded"
+    },
+    "cardBack": {
+      "path": "assets/card_back.png",
+      "count": 1,
+      "bytes": 72156,
+      "aggregateSha256": "3a669e9d7152eb49a5823edd9726125e0428aa45d57a70ae80c5a497f0f5c647"
+    }
+  },
+  "collectionAggregateSha256": "46be1755fa3ef7fd009b1dd544e12cdbc10fe6c1f8bd4e4958950afc27326ed5",
+  "rules": {
+    "pngWidth": 1400,
+    "pngHeight": 2000,
+    "strictProductionRequiresExactAggregate": true,
+    "fallbacksAreNotProductionAssets": true,
+    "productSignature": "Tehkné Solutions"
+  }
+}

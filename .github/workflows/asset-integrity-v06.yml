@@ -1,0 +1,32 @@
+name: ALEPH 119 Asset Integrity v0.6 Gate
+
+on:
+  pull_request:
+    paths:
+      - 'data/card-assets-integrity-v06.json'
+      - 'tools/validate_asset_integrity_v06.mjs'
+      - '.github/workflows/asset-integrity-v06.yml'
+      - 'assets/**'
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      strict:
+        description: 'Require the exact 199 premium assets'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  verify-integrity-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate contract or complete collection
+        run: node tools/validate_asset_integrity_v06.mjs
+      - name: Strict production verification
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.strict }}
+        run: node tools/validate_asset_integrity_v06.mjs --strict
