@@ -1,0 +1,13 @@
+const state={data:null,view:'home',letter:0,verseIndex:0,quiz:null};
+const KEY='aleph119-progress-v02';
+function defaultProgress(){return {seen:[],mastered:[],score:0,quizCount:0,xp:0,streak:0,lastStudy:null,unlockedLetters:[1]}}
+function loadProgress(){try{return {...defaultProgress(),...(JSON.parse(localStorage.getItem(KEY))||{})}}catch{return defaultProgress()}}
+function saveProgress(p){localStorage.setItem(KEY,JSON.stringify(p));updateHud(p)}
+function levelFromXP(xp){return Math.floor(xp/250)+1}
+function updateHud(p=loadProgress()){document.getElementById('hud-level').textContent=`Nv. ${levelFromXP(p.xp)}`;document.getElementById('hud-xp').textContent=`${p.xp} XP`;document.getElementById('hud-streak').textContent=`🔥 ${p.streak}`}
+function nav(){document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{state.view=b.dataset.view;render()})}
+function home(){const p=loadProgress();return `<section class="hero"><div><div class="kicker">Hebraico • Salmo 119 • coleção viva</div><h1>ALEPH<br>119</h1><p class="lead">Aprenda hebraico bíblico por letras, versos, memória, escrita e revisão espaçada.</p><div class="statrow"><div class="stat"><b>22</b><br>letras</div><div class="stat"><b>176</b><br>verse cards</div><div class="stat"><b>${levelFromXP(p.xp)}</b><br>nível atual</div></div><button class="primary" onclick="state.view='collection';render()">Abrir coleção</button></div></section>`}
+function collection(){if(!state.data)return '<div class="panel">Carregando coleção…</div>';const cards=state.data.letters.map(l=>`<article class="card"><img src="${l.masterAsset}" alt="${l.name}"><div class="card-meta"><strong>${l.hebrew} ${l.name}</strong><small>Salmo 119:${l.startVerse}–${l.endVerse}</small><span class="pill">Master Letter</span></div></article>`).join('');return `<div class="section-title"><h2>Coleção</h2><span>198 cards</span></div><div class="grid">${cards}</div>`}
+function placeholder(title,body){return `<div class="section-title"><h2>${title}</h2></div><div class="panel">${body}</div>`}
+function render(){const view=document.getElementById('view');const fn={home,collection,study:()=>placeholder('Estudar','Fluxo de estudo por letra preparado para receber os 198 assets.'),review:()=>placeholder('Revisar','Revisão espaçada SRS planejada para esta coleção.'),writing:()=>placeholder('Escrever','Treino de escrita das 22 letras com canvas.'),quiz:()=>placeholder('Quiz','Reconhecimento de letras, sons e significados.'),progress:()=>placeholder('Progresso','XP, níveis, domínio e desbloqueios da coleção.')};view.innerHTML=(fn[state.view]||home)();nav();updateHud()}
+fetch('data/cards.json').then(r=>r.json()).then(d=>{state.data=d;render()}).catch(()=>render());
