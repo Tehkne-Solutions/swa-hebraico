@@ -1,0 +1,22 @@
+name: ALEPH 119 Asset Batches v0.8 Gate
+
+on:
+  pull_request:
+    paths:
+      - 'data/asset-batches-v08.json'
+      - 'data/cards.json'
+      - 'tools/validate_asset_batches_v08.mjs'
+      - 'assets/**'
+      - '.github/workflows/asset-batches-v08.yml'
+  push:
+    branches: [main]
+
+jobs:
+  validate-batch-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/validate_asset_batches_v08.mjs
