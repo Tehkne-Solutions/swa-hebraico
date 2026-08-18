@@ -1,13 +1,232 @@
-const state={data:null,view:'home',letter:0,verseIndex:0,quiz:null};
+const state={data:null,view:'home',letter:0,verseIndex:0,quiz:null,reviewId:null};
 const KEY='aleph119-progress-v02';
-function defaultProgress(){return {seen:[],mastered:[],score:0,quizCount:0,xp:0,streak:0,lastStudy:null,unlockedLetters:[1]}}
-function loadProgress(){try{return {...defaultProgress(),...(JSON.parse(localStorage.getItem(KEY))||{})}}catch{return defaultProgress()}}
+
+function defaultProgress(){
+ return {seen:[],mastered:[],score:0,quizCount:0,xp:0,streak:0,lastStudy:null,
+         review:{},unlockedLetters:[1]};
+}
+function loadProgress(){
+ try{return {...defaultProgress(),...(JSON.parse(localStorage.getItem(KEY))||{})}}catch{return defaultProgress()}
+}
 function saveProgress(p){localStorage.setItem(KEY,JSON.stringify(p));updateHud(p)}
+function addXP(n){
+ const p=loadProgress();p.xp+=n;
+ const today=new Date().toISOString().slice(0,10);
+ if(p.lastStudy!==today){
+   const prev=p.lastStudy?new Date(p.lastStudy):null;
+   const diff=prev?Math.round((new Date(today)-prev)/86400000):null;
+   p.streak=diff===1?p.streak+1:1;p.lastStudy=today;
+ }
+ saveProgress(p);return p;
+}
 function levelFromXP(xp){return Math.floor(xp/250)+1}
-function updateHud(p=loadProgress()){document.getElementById('hud-level').textContent=`Nv. ${levelFromXP(p.xp)}`;document.getElementById('hud-xp').textContent=`${p.xp} XP`;document.getElementById('hud-streak').textContent=`🔥 ${p.streak}`}
-function nav(){document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{state.view=b.dataset.view;render()})}
-function home(){const p=loadProgress();return `<section class="hero"><div><div class="kicker">Hebraico • Salmo 119 • coleção viva</div><h1>ALEPH<br>119</h1><p class="lead">Aprenda hebraico bíblico por letras, versos, memória, escrita e revisão espaçada.</p><div class="statrow"><div class="stat"><b>22</b><br>letras</div><div class="stat"><b>176</b><br>verse cards</div><div class="stat"><b>${levelFromXP(p.xp)}</b><br>nível atual</div></div><button class="primary" onclick="state.view='collection';render()">Abrir coleção</button></div></section>`}
-function collection(){if(!state.data)return '<div class="panel">Carregando coleção…</div>';const cards=state.data.letters.map(l=>`<article class="card"><img src="${l.masterAsset}" alt="${l.name}"><div class="card-meta"><strong>${l.hebrew} ${l.name}</strong><small>Salmo 119:${l.startVerse}–${l.endVerse}</small><span class="pill">Master Letter</span></div></article>`).join('');return `<div class="section-title"><h2>Coleção</h2><span>198 cards</span></div><div class="grid">${cards}</div>`}
-function placeholder(title,body){return `<div class="section-title"><h2>${title}</h2></div><div class="panel">${body}</div>`}
-function render(){const view=document.getElementById('view');const fn={home,collection,study:()=>placeholder('Estudar','Fluxo de estudo por letra preparado para receber os 198 assets.'),review:()=>placeholder('Revisar','Revisão espaçada SRS planejada para esta coleção.'),writing:()=>placeholder('Escrever','Treino de escrita das 22 letras com canvas.'),quiz:()=>placeholder('Quiz','Reconhecimento de letras, sons e significados.'),progress:()=>placeholder('Progresso','XP, níveis, domínio e desbloqueios da coleção.')};view.innerHTML=(fn[state.view]||home)();nav();updateHud()}
-fetch('data/cards.json').then(r=>r.json()).then(d=>{state.data=d;render()}).catch(()=>render());
+function updateHud(p=loadProgress()){
+ const l=levelFromXP(p.xp);
+ document.getElementById('hud-level').textContent=`Nv. ${l}`;
+ document.getElementById('hud-xp').textContent=`${p.xp} XP`;
+ document.getElementById('hud-streak').textContent=`🔥 ${p.streak}`;
+}
+function cardKey(letter,verseIndex){
+ return verseIndex===0?'L'+letter.id:'V'+(letter.startVerse+verseIndex-1);
+}
+function markSeen(id){
+ const p=loadProgress();
+ if(!p.seen.includes(id)){p.seen.push(id);p.xp+=3;saveProgress(p)}
+}
+function markMastered(id){
+ const p=loadProgress();
+ if(!p.mastered.includes(id)){p.mastered.push(id);p.xp+=20}
+ scheduleReview(p,id,'good');
+ saveProgress(p);
+ unlockByMastery(p);
+}
+function unlockByMastery(p){
+ for(const l of state.data.letters){
+   if(p.unlockedLetters.includes(l.id))continue;
+   const prev=state.data.letters.find(x=>x.id===l.id-1);
+   if(!prev){p.unlockedLetters.push(l.id);continue}
+   const need=['L'+prev.id,...Array.from({length:8},(_,i)=>'V'+(prev.startVerse+i))];
+   const learned=need.filter(x=>p.mastered.includes(x)).length;
+   if(learned>=5){p.unlockedLetters.push(l.id)}
+ }
+ saveProgress(p);
+}
+function scheduleReview(p,id,rating){
+ const now=Date.now();
+ const old=p.review[id]||{interval:0,ease:2.5,reps:0};
+ let interval=1;
+ if(rating==='again'){interval=0.01;old.ease=Math.max(1.3,old.ease-.2);old.reps=0}
+ if(rating==='hard'){interval=Math.max(1,old.interval*1.2||1);old.ease=Math.max(1.3,old.ease-.15);old.reps++}
+ if(rating==='good'){interval=old.reps===0?1:old.reps===1?3:Math.max(3,old.interval*old.ease);old.reps++}
+ if(rating==='easy'){interval=old.reps===0?3:Math.max(5,old.interval*(old.ease+.25));old.ease+=.15;old.reps++}
+ old.interval=interval;
+ old.due=now+interval*86400000;
+ p.review[id]=old;
+}
+function isUnlocked(letterId){
+ return loadProgress().unlockedLetters.includes(letterId);
+}
+function nav(){
+ document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{state.view=b.dataset.view;render()});
+}
+
+function home(){
+ const p=loadProgress(), first=state.data.letters[0], lvl=levelFromXP(p.xp);
+ return `<section class="hero">
+ <div><div class="kicker">Hebraico • Salmo 119 • coleção viva</div>
+ <h1>ALEPH<br>119</h1>
+ <p class="lead">Aprenda hebraico bíblico por letras, versos, memória, escrita e revisão espaçada. A coleção inteira funciona como um mapa de progresso.</p>
+ <div class="statrow"><div class="stat"><b>22</b><br>letras</div><div class="stat"><b>176</b><br>verse cards</div><div class="stat"><b>${lvl}</b><br>nível atual</div><div class="stat"><b>${p.streak}</b><br>dias de sequência</div></div>
+ <button class="primary" onclick="state.view='study';render()">Continuar estudo</button>
+ <button class="ghost" onclick="state.view='review';render()">Revisar agora</button>
+ </div>
+ <div class="hero-card"><img src="${first.masterAsset}" alt="Aleph"></div>
+ </section>`;
+}
+
+function collection(){
+ const p=loadProgress();
+ const cards=state.data.letters.map((l,i)=>{
+   const unlocked=isUnlocked(l.id);
+   return `<article class="card ${unlocked?'':'locked'}" onclick="${unlocked?`state.letter=${i};state.view='study';render()`:`void(0)`}">
+   <img src="${l.masterAsset}" loading="lazy" alt="${l.name}">
+   ${unlocked?'':'<div class="lock">🔒</div>'}
+   <div class="card-meta"><strong>${l.hebrew} ${l.name}</strong><small>Salmo 119:${l.startVerse}–${l.endVerse}</small>
+   <span class="pill">${p.mastered.includes('L'+l.id)?'Dominada':unlocked?'Disponível':'Bloqueada'}</span></div></article>`;
+ }).join('');
+ return `<div class="section-title"><h2>Coleção</h2><span>${p.unlockedLetters.length}/22 letras abertas</span></div><div class="grid">${cards}</div>`;
+}
+
+function study(){
+ let l=state.data.letters[state.letter];
+ if(!isUnlocked(l.id)){
+   const firstUnlocked=state.data.letters.findIndex(x=>isUnlocked(x.id));
+   state.letter=Math.max(0,firstUnlocked);l=state.data.letters[state.letter];
+ }
+ const id=cardKey(l,state.verseIndex);
+ markSeen(id); addXP(1);
+ const asset=state.verseIndex===0?l.masterAsset:l.verseAssets[state.verseIndex-1];
+ const buttons=state.data.letters.map((x,i)=>{
+   const unlocked=isUnlocked(x.id);
+   return `<button class="letter-btn ${i===state.letter?'active':''}" ${unlocked?'':'disabled'} onclick="${unlocked?`state.letter=${i};state.verseIndex=0;render()`:'void(0)'}"><span>${x.hebrew} ${x.name}</span><small>${unlocked?x.startVerse+'-'+x.endVerse:'🔒'}</small></button>`;
+ }).join('');
+ const chips=[`<button class="verse-chip ${state.verseIndex===0?'active':''}" onclick="state.verseIndex=0;render()">Master</button>`]
+   .concat(l.verseAssets.map((_,i)=>`<button class="verse-chip ${state.verseIndex===i+1?'active':''}" onclick="state.verseIndex=${i+1};render()">${l.startVerse+i}</button>`)).join('');
+ return `<div class="study-shell"><aside class="letter-list">${buttons}</aside>
+ <section class="study-main">
+  <div class="section-title"><h2>${l.hebrew} ${l.name}</h2><span>Salmo 119:${l.startVerse}–${l.endVerse}</span></div>
+  <div class="verse-strip">${chips}</div>
+  <div class="viewer">
+   <div class="viewer-card" onclick="this.querySelector('.flip').classList.toggle('flipped')">
+    <div class="flip"><div class="face"><img src="${asset}"></div><div class="face back"><img src="assets/card_back.png"></div></div>
+   </div>
+   <div class="lesson-box">
+    <h3>${state.verseIndex===0?'Master Letter Card':'Verse Card '+(l.startVerse+state.verseIndex-1)}</h3>
+    <p>Observe → pronuncie → vire → recupere da memória → relacione → aplique.</p>
+    <p><span class="badge">+20 XP ao dominar</span></p>
+    <button class="primary" onclick="markMastered('${id}');render()">Marcar como dominado</button>
+    <button class="ghost" onclick="state.view='writing';render()">Treinar escrita</button>
+    <button class="ghost" onclick="state.view='quiz';newQuiz();render()">Quiz da letra</button>
+   </div>
+  </div>
+ </section></div>`;
+}
+
+function getDueCards(){
+ const p=loadProgress(), now=Date.now(), ids=[];
+ for(const [id,r] of Object.entries(p.review||{})) if(!r.due || r.due<=now) ids.push(id);
+ if(ids.length===0) ids.push(...p.mastered.slice(-12));
+ return ids;
+}
+function resolveAssetById(id){
+ if(id.startsWith('L')){
+   const l=state.data.letters.find(x=>x.id===Number(id.slice(1)));return {asset:l.masterAsset,label:`${l.hebrew} ${l.name}`};
+ }
+ const v=Number(id.slice(1));
+ for(const l of state.data.letters){
+   if(v>=l.startVerse&&v<=l.endVerse)return {asset:l.verseAssets[v-l.startVerse],label:`Salmo 119:${v}`};
+ }
+}
+function review(){
+ const due=getDueCards();
+ if(!due.length)return `<div class="empty">Nenhum card para revisão ainda. Domine alguns cards primeiro.</div>`;
+ if(!state.reviewId||!due.includes(state.reviewId))state.reviewId=due[0];
+ const r=resolveAssetById(state.reviewId);
+ return `<section class="review"><div class="section-title"><h2>Revisão espaçada</h2><span>${due.length} pendentes</span></div>
+ <div class="review-card"><img src="${r.asset}" alt="${r.label}"></div>
+ <div class="panel"><h3>${r.label}</h3><p>Recupere a informação antes de avaliar.</p>
+ <div class="review-actions">
+  <button class="danger" onclick="rateReview('again')">Errei</button>
+  <button class="ghost" onclick="rateReview('hard')">Difícil</button>
+  <button class="primary" onclick="rateReview('good')">Bom</button>
+  <button class="ghost" onclick="rateReview('easy')">Fácil</button>
+ </div></div></section>`;
+}
+window.rateReview=function(rating){
+ const p=loadProgress();scheduleReview(p,state.reviewId,rating);p.xp+=rating==='easy'?12:rating==='good'?8:rating==='hard'?5:2;saveProgress(p);
+ state.reviewId=null;render();
+}
+
+function writing(){
+ const l=state.data.letters[state.letter];
+ return `<section class="writing"><div class="section-title"><h2>Treino de escrita</h2><span>${l.hebrew} ${l.name}</span></div>
+ <div class="canvas-wrap"><div class="letter-ref">${l.hebrew}</div><canvas id="writeCanvas" width="700" height="700"></canvas></div>
+ <div class="review-actions" style="margin-top:14px"><button class="ghost" onclick="clearCanvas()">Limpar</button><button class="primary" onclick="addXP(10);alert('+10 XP');render()">Concluir treino</button></div>
+ <p class="lead" style="font-size:16px">Trace a letra várias vezes. O objetivo desta sprint é treino motor livre; a próxima camada poderá comparar o traço com um modelo vetorial.</p></section>`;
+}
+function setupCanvas(){
+ const c=document.getElementById('writeCanvas');if(!c)return;
+ const ctx=c.getContext('2d');ctx.lineWidth=18;ctx.lineCap='round';ctx.strokeStyle='#07131f';
+ let drawing=false;
+ const pos=e=>{const r=c.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return [(t.clientX-r.left)*c.width/r.width,(t.clientY-r.top)*c.height/r.height]};
+ const start=e=>{drawing=true;const [x,y]=pos(e);ctx.beginPath();ctx.moveTo(x,y);e.preventDefault()};
+ const move=e=>{if(!drawing)return;const [x,y]=pos(e);ctx.lineTo(x,y);ctx.stroke();e.preventDefault()};
+ const end=e=>{drawing=false;e.preventDefault()};
+ c.addEventListener('mousedown',start);c.addEventListener('mousemove',move);window.addEventListener('mouseup',end);
+ c.addEventListener('touchstart',start,{passive:false});c.addEventListener('touchmove',move,{passive:false});c.addEventListener('touchend',end,{passive:false});
+}
+window.clearCanvas=function(){const c=document.getElementById('writeCanvas');if(c)c.getContext('2d').clearRect(0,0,c.width,c.height)}
+
+function newQuiz(){
+ const letters=state.data.letters.filter(x=>isUnlocked(x.id));
+ const correct=letters[Math.floor(Math.random()*letters.length)];
+ const wrong=letters.filter(x=>x.id!==correct.id).sort(()=>Math.random()-.5).slice(0,3);
+ state.quiz={correct,options:[correct,...wrong].sort(()=>Math.random()-.5),answered:false};
+}
+function quiz(){
+ if(!state.quiz)newQuiz();
+ const q=state.quiz;
+ return `<section class="quiz"><div class="kicker">Treino rápido</div><h2 class="question">Qual é a letra ${q.correct.name}?</h2>
+ <div class="answers">${q.options.map(o=>`<button class="answer" onclick="answerQuiz(${o.id},this)">${o.hebrew} &nbsp; ${o.name}</button>`).join('')}</div>
+ <div id="quiz-result"></div></section>`;
+}
+window.answerQuiz=function(id,el){
+ const q=state.quiz;if(q.answered)return;q.answered=true;
+ const ok=id===q.correct.id;el.classList.add(ok?'correct':'wrong');
+ const p=loadProgress();p.quizCount++;if(ok){p.score++;p.xp+=12}else p.xp+=3;saveProgress(p);
+ document.getElementById('quiz-result').innerHTML=`<p>${ok?'Correto. +12 XP':'Resposta correta: '+q.correct.hebrew+' '+q.correct.name}</p><button class="primary" onclick="newQuiz();render()">Próxima</button>`;
+}
+
+function progress(){
+ const p=loadProgress();
+ const pct=Math.round((p.mastered.length/198)*100), qacc=p.quizCount?Math.round(p.score/p.quizCount*100):0;
+ return `<div class="section-title"><h2>Progresso</h2><span>Nível ${levelFromXP(p.xp)}</span></div>
+ <div class="progress-grid">
+  <div class="progress-card"><b>XP</b><div>${p.xp}</div><div class="bar"><span style="width:${(p.xp%250)/2.5}%"></span></div></div>
+  <div class="progress-card"><b>Cards vistos</b><div>${p.seen.length}/198</div><div class="bar"><span style="width:${p.seen.length/198*100}%"></span></div></div>
+  <div class="progress-card"><b>Cards dominados</b><div>${p.mastered.length}/198</div><div class="bar"><span style="width:${pct}%"></span></div></div>
+  <div class="progress-card"><b>Letras abertas</b><div>${p.unlockedLetters.length}/22</div><div class="bar"><span style="width:${p.unlockedLetters.length/22*100}%"></span></div></div>
+  <div class="progress-card"><b>Quiz</b><div>${qacc}% de acerto</div><div class="bar"><span style="width:${qacc}%"></span></div></div>
+  <div class="progress-card"><b>Sequência</b><div>${p.streak} dia(s)</div><div class="bar"><span style="width:${Math.min(100,p.streak*10)}%"></span></div></div>
+ </div>
+ <p style="margin-top:24px"><button class="danger" onclick="if(confirm('Zerar progresso?')){localStorage.removeItem('${KEY}');render()}">Zerar progresso local</button></p>`;
+}
+
+function render(){
+ const view=document.getElementById('view');
+ const fn={home,collection,study,review,writing,quiz,progress}[state.view]||home;
+ view.innerHTML=fn();nav();updateHud();if(state.view==='writing')setupCanvas();
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+
+fetch('data/cards.json').then(r=>r.json()).then(d=>{state.data=d;render()});
