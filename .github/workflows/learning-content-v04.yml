@@ -1,0 +1,20 @@
+name: ALEPH 119 Learning Content v0.4 Gate
+
+on:
+  pull_request:
+    paths:
+      - 'data/learning-content-v04.json'
+      - 'tools/validate_learning_content_v04.mjs'
+      - '.github/workflows/learning-content-v04.yml'
+  push:
+    branches: [main]
+
+jobs:
+  validate-learning-content:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/validate_learning_content_v04.mjs
