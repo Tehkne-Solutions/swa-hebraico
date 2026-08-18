@@ -1,0 +1,49 @@
+{
+  "version": "0.4.0",
+  "signature": "Tehkné Solutions",
+  "locale": "pt-BR",
+  "collection": {
+    "masterLetterCards": 22,
+    "psalm119VerseCards": 176,
+    "primaryCards": 198,
+    "campaignChapters": 22,
+    "missionsPerChapter": 8
+  },
+  "masterLetterSchema": [
+    "id", "order", "hebrewModern", "name", "paleoHebrew", "pictographicOrigin",
+    "numericValue", "modernTransliteration", "modernPronunciation", "biblicalPronunciation",
+    "meaningPtBr", "class", "psalm119Range", "rootOrWord", "connections",
+    "seferYetzirah", "laterTradition", "strokeFormation", "evidenceGrade", "sources"
+  ],
+  "verseCardSchema": [
+    "id", "letterId", "psalm119Verse", "hebrewText", "transliteration",
+    "pronunciationPtBr", "translationPtBr", "wordByWord", "roots", "prefixes",
+    "suffixes", "concept", "crossReferences", "studyFocus", "sources"
+  ],
+  "studyFocus": [
+    "encontre_a_letra", "pronuncie", "reconheca_a_raiz", "monte_a_frase", "descubra_a_conexao"
+  ],
+  "physicalCard": {
+    "widthMm": 70,
+    "heightMm": 100,
+    "palette": ["navy", "gold", "parchment"],
+    "paper": "350g premium",
+    "finish": ["laminacao fosca", "verniz dourado localizado"],
+    "back": "padrao unico da colecao"
+  },
+  "assetPaths": {
+    "masters": "assets/cards/master/{order}_{slug}.png",
+    "verses": "assets/cards/verses/{verse}.png",
+    "back": "assets/card_back.png"
+  },
+  "rules": {
+    "descriptions": "pt-BR",
+    "includePaleoHebrew": true,
+    "includePictographic": true,
+    "includeNumeric": true,
+    "includeModernAndBiblicalPronunciation": true,
+    "includeStrokeFormation": true,
+    "claimsRequireEvidenceGrade": true,
+    "productSignature": "Tehkné Solutions"
+  }
+}

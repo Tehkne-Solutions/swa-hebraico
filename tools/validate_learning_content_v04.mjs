@@ -1,0 +1,16 @@
+import fs from 'node:fs';
+const p='data/learning-content-v04.json';
+const d=JSON.parse(fs.readFileSync(p,'utf8'));
+const fail=(m)=>{console.error('FAIL:',m);process.exitCode=1};
+if(d.signature!=='Tehkné Solutions') fail('invalid product signature');
+if(d.locale!=='pt-BR') fail('locale must be pt-BR');
+if(d.collection.masterLetterCards!==22) fail('expected 22 master cards');
+if(d.collection.psalm119VerseCards!==176) fail('expected 176 verse cards');
+if(d.collection.primaryCards!==198) fail('expected 198 primary cards');
+if(d.collection.campaignChapters!==22||d.collection.missionsPerChapter!==8) fail('expected 22x8 campaign');
+if(d.masterLetterSchema.length!==20) fail('master schema must have 20 fields');
+for(const k of ['paleoHebrew','pictographicOrigin','numericValue','modernTransliteration','modernPronunciation','biblicalPronunciation','strokeFormation','evidenceGrade']) if(!d.masterLetterSchema.includes(k)) fail('missing master field '+k);
+for(const k of ['hebrewText','transliteration','pronunciationPtBr','translationPtBr','wordByWord','roots','prefixes','suffixes','studyFocus']) if(!d.verseCardSchema.includes(k)) fail('missing verse field '+k);
+if(d.physicalCard.widthMm!==70||d.physicalCard.heightMm!==100) fail('physical size must be 70x100mm');
+if(d.rules.productSignature!=='Tehkné Solutions') fail('signature rule mismatch');
+if(!process.exitCode) console.log('PASS: ALEPH 119 learning content v0.4 contract valid');
