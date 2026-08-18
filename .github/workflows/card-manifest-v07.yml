@@ -1,0 +1,21 @@
+name: ALEPH 119 Card Manifest v0.7 Gate
+
+on:
+  pull_request:
+    paths:
+      - 'data/cards.json'
+      - 'tools/card-manifest-v07.mjs'
+      - 'docs/ASSET_INGESTION_STATUS.md'
+      - '.github/workflows/card-manifest-v07.yml'
+  push:
+    branches: [main]
+
+jobs:
+  validate-card-manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/card-manifest-v07.mjs
