@@ -1,0 +1,11 @@
+{
+  "version": "0.7.0",
+  "signature": "Tehkné Solutions",
+  "primaryCardIds": {
+    "masters": "L001-L022",
+    "verses": "V001-V176"
+  },
+  "productionAssetCount": 199,
+  "generator": "tools/card-manifest-v07.mjs",
+  "materializedOutput": "data/card-manifest-v07.generated.json"
+}
