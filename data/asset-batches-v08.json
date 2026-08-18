@@ -1,0 +1,68 @@
+{
+  "version": "0.8.0",
+  "signature": "Tehkné Solutions",
+  "collection": {
+    "productionAssets": 199,
+    "masterLetterCards": 22,
+    "verseCards": 176,
+    "cardBack": 1,
+    "totalBytes": 83588539,
+    "aggregateSha256": "46be1755fa3ef7fd009b1dd544e12cdbc10fe6c1f8bd4e4958950afc27326ed5"
+  },
+  "batches": [
+    {
+      "id": "B00",
+      "name": "master-letters-and-card-back",
+      "kind": "master",
+      "assets": 23,
+      "bytes": 25670357,
+      "masterRange": [1, 22],
+      "includesCardBack": true,
+      "releaseOrder": 0
+    },
+    {
+      "id": "B01",
+      "name": "verses-001-044",
+      "kind": "verses",
+      "assets": 44,
+      "bytes": 33792616,
+      "verseRange": [1, 44],
+      "releaseOrder": 1
+    },
+    {
+      "id": "B02",
+      "name": "verses-045-088",
+      "kind": "verses",
+      "assets": 44,
+      "bytes": 8060591,
+      "verseRange": [45, 88],
+      "releaseOrder": 2
+    },
+    {
+      "id": "B03",
+      "name": "verses-089-132",
+      "kind": "verses",
+      "assets": 44,
+      "bytes": 8036884,
+      "verseRange": [89, 132],
+      "releaseOrder": 3
+    },
+    {
+      "id": "B04",
+      "name": "verses-133-176",
+      "kind": "verses",
+      "assets": 44,
+      "bytes": 8028091,
+      "verseRange": [133, 176],
+      "releaseOrder": 4
+    }
+  ],
+  "rules": {
+    "mergeOnlyAfterBatchPass": true,
+    "productionRequiresAllBatches": true,
+    "fallbacksCountAsProductionAssets": false,
+    "expectedPngWidth": 1400,
+    "expectedPngHeight": 2000,
+    "finalCommand": "node tools/validate_asset_integrity_v06.mjs --strict"
+  }
+}
