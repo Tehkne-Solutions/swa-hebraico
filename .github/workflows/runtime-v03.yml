@@ -1,0 +1,23 @@
+name: ALEPH 119 Runtime v0.3 Gate
+
+on:
+  pull_request:
+    paths:
+      - 'app.js'
+      - 'index.html'
+      - 'training.css'
+      - 'tools/validate_runtime_v03.mjs'
+      - '.github/workflows/runtime-v03.yml'
+  push:
+    branches: [main]
+
+jobs:
+  validate-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check app.js
+      - run: node tools/validate_runtime_v03.mjs
